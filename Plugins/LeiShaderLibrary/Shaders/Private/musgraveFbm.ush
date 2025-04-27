@@ -1,0 +1,85 @@
+struct Functions 
+{
+float sum2(float2 v) { return dot(v, float2(1,1)); }
+
+float h31(float3 p3) {
+	p3 = frac(p3 * .1031);
+	p3 += dot(p3, p3.yzx + 333.3456);
+	return frac(sum2(p3.xy) * p3.z);
+}
+
+float h21(float2 p) { return h31(p.xyx); }
+
+float n31(float3 p) {
+	const float3 s = float3(7, 157, 113);
+
+	float3 ip = floor(p);
+	p = frac(p);
+	p = p * p * (3. - 2. * p);
+	float4 h = float4(0, s.yz, sum2(s.yz)) + dot(ip, s);
+	h = lerp(frac(sin(h) * 43758.545), frac(sin(h + s.x) * 43758.545), p.x);
+	h.xy = lerp(h.xz, h.yw, p.y);
+	return lerp(h.x, h.y, p.z);
+}
+
+float3 randomPos(float seed) {
+	float4 s = float4(seed, 0, 1, 2);
+	return float3(h21(s.xy), h21(s.xz), h21(s.xw)) * 1e2 + 1e2;
+}
+
+float remap01(float f, float in1, float in2) { return saturate((f - in1) / (in2 - in1)); }
+
+float fbm(float3 p, int octaves, float roughness) {
+	float sum = 0.,
+	      amp = 1.,
+	      tot = 0.;
+	roughness = saturate(roughness);
+	for (int i = 0; i < octaves; i++) {
+		sum += amp * n31(p);
+		tot += amp;
+		amp *= roughness;
+		p *= 2.;
+	}
+	return sum / tot;
+}
+
+float fbmDistorted(float3 p) {
+	p += (float3(n31(p + randomPos(0.)), n31(p + randomPos(1.)), n31(p + randomPos(2.))) * 2. - 1.) * 1.12;
+	return fbm(p, 8, .5);
+}
+
+float musgraveFbm(float3 p, float octaves, float dimension, float lacunarity) {
+	float sum = 0.,
+	      amp = 1.,
+	      m = pow(lacunarity, -dimension);
+	for (float i = 0.; i < octaves; i++) {
+		float n = n31(p) * 2. - 1.;
+		sum += n * amp;
+		amp *= m;
+		p *= lacunarity;
+	}
+	return sum;
+}
+
+float3 waveFbmX(float3 p) {
+	float n = p.x * 20.;
+	n += .4 * fbm(p * 3., 3, 3.);
+	return float3(sin(n) * .5 + .5, p.yz);
+}
+
+float3 matWood(float3 p) {
+	float n1 = fbmDistorted(p * float3(7.8, 1.17, 1.17));
+	n1 = lerp(n1, 1., .2);
+	float n2 = lerp(musgraveFbm(float3(n1 * 4.6, n1 * 4.6, n1 * 4.6), 8., 0., 2.5), n1, .85),
+	      dirt = 1. - musgraveFbm(waveFbmX(p * float3(.01, .15, .15)), 15., .26, 2.4) * .4;
+	float grain = 1. - smoothstep(.2, 1., musgraveFbm(p * float3(500, 6, 1), 2., 2., 2.5)) * .2;
+	n2 *= dirt * grain;
+    
+    // The three vec3 values are the RGB wood colors
+	return lerp(lerp(float3(.03, .012, .003), float3(.25, .11, .04), remap01(n2, .19, .56)), float3(.52, .32, .19), remap01(n2, .56, 1.));
+}
+
+};
+
+Functions F;
+return float4(pow(F.matWood(WP), float3(.4545,.4545,.4545)), 1.0);

@@ -1,0 +1,106 @@
+struct Functions
+{
+float random(float2 uv) {
+    return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
+}
+
+float noise (in float2 _st) {
+    float2 i = floor(_st);
+    float2 f = frac(_st);
+
+    // Four corners in 2D of a tile
+    float a = random(i);
+    float b = random(i + float2(1.0, 0.0));
+    float c = random(i + float2(0.0, 1.0));
+    float d = random(i + float2(1.0, 1.0));
+
+    float2 u = f * f * (3.0 - 2.0 * f);
+
+    return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+}
+
+// #define OCTAVES 40
+
+float fbm ( in float2 _st, float2 offset, int OCTAVES) {
+    float value = 0.0;
+    float amplitude = .5;
+    // float2 offset = float2(100.0, 100.0);
+
+    // Rotate to reduce axial bias
+    float2x2 rot = float2x2(cos(0.5), sin(0.5),
+                            -sin(0.5), cos(0.5));
+     
+    for (int i = 0; i < 100; ++i) {
+        if (i >= OCTAVES) break;
+        value += amplitude * noise(_st);
+        _st = mul(rot, _st);
+        _st += offset;
+        _st *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
+float3 XX( int iteration, float detail, float seed, float2 _st , float2 offset, int octaves, float3 Cd1, float3 Cd2, float3 Cd3, float3 Cd4, float colorful)
+{
+    float2 deltas[100];
+    float2 delta = 0;
+    float3 col = float3(0.2,0.1,0.4);
+
+    float tiny = .01;
+    float2 _st2 = _st + float2(tiny,0);
+    float2 _st3 = _st + float2(0,tiny);
+    float2 delta2 = 0;
+    float2 delta3 = 0;
+
+    for (int i = 1; i <= 100; i++) {
+        float2 randA = float2(random(i * seed), random(i * seed + 414.7));
+        float2 randB = float2(random(i * seed + 148.97), random(i * seed - 45.47));
+
+        delta = float2( fbm( _st + detail * delta + randA, offset, octaves ),
+                        fbm( _st + detail * delta + randB, offset, octaves ) );
+
+        float2 delta2 = float2( fbm( _st2 + detail * delta2 + randA, offset, octaves ),
+                                fbm( _st2 + detail * delta2 + randB, offset, octaves ) );
+        float2 delta3 = float2( fbm( _st3 + detail * delta3 + randA, offset, octaves ),
+                                fbm( _st3 + detail * delta3 + randB, offset, octaves ) );
+
+        int j = i - 1;
+        deltas[j] = delta;
+
+        if (i%4 == 1)
+            col = lerp( col, Cd1/*float3(0.9,0.9,0.9)*/, dot(deltas[j],deltas[j]) );
+        else if (i%4 == 2)
+            col = lerp( col, Cd2/*float3(0.5,0.2,0.2)*/, 0.75*deltas[j].x*deltas[j].y );
+        else if (i%4 == 3)
+            col = lerp( col, Cd3/*float3(0.0,0.2,0.4)*/, 0.5*smoothstep(1.2,1.3,abs(deltas[j].y)+abs(deltas[j].x)) ); 
+        else 
+            col = lerp( col, Cd4/*float3(0.3,0.05,0.05)*/, fbm( _st + detail * delta, offset, octaves ) );
+        
+        if (i >= iteration) break;
+    }
+    float _out_ = fbm( _st + detail * delta, offset, octaves );
+    float _out2_ = fbm( _st2 + detail * delta2, offset, octaves );
+    float _out3_ = fbm( _st3 + detail * delta3, offset, octaves );
+
+    col *= _out_ * 2;
+
+    
+    float3 N = normalize( float3( _out2_ - _out_, tiny, _out3_ - _out_ ) );
+    float3 light = normalize( float3( 0.9, -0.2, -0.4 ) );
+    float dif = clamp( 0.3+0.7*dot( N, light ), 0.0, 1.0 );
+    float3 lin  = float3(0.85,0.90,0.95)*(N.y*0.5+0.5); //blue
+           lin += float3(0.15,0.10,0.05)*dif; //warn
+    
+    col *= colorful*lin;
+    col = 1-col;
+    col *= col;
+
+    return col;
+}
+
+};
+
+
+Functions F;
+return F.XX(Iteration, Detail, 196.51, UV, Offset, Octaves, Cd1, Cd2, Cd3, Cd4, Saturation);
