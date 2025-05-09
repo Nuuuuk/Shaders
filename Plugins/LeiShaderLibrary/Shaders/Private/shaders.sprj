@@ -37,7 +37,7 @@
 		<entry type="file" name="Main" shader="vs" />
 		<entry type="file" name="Main" shader="ps" />
 		<entry type="camera" fp="false">
-			<distance>14</distance>
+			<distance>16</distance>
 			<pitch>0</pitch>
 			<yaw>0</yaw>
 			<roll>0</roll>

@@ -1,9 +1,9 @@
-cbuffer vars : register(b0) {
-	float2 uResolution;
-};
+// cbuffer vars : register(b0) {
+// 	float2 uResolution;
+// };
 
-Texture2D tex : register(t0);
-SamplerState smp : register(s0);
+// Texture2D tex : register(t0);
+// SamplerState smp : register(s0);
 
 struct Functions
 {
@@ -16,16 +16,16 @@ struct Functions
 // // Constant buffer
 // cbuffer Constants : register(b0)
 // {
-    float BrushDetail;
-    float StrokeBend;
-    float BrushSize;
+    // float BrushDetail;
+    // float StrokeBend;
+    // float BrushSize;
     
-    float layerScale;
+    // float layerScale;
 
-    float SrcContrast;
-    float SrcBright;
+    // float SrcContrast;
+    // float SrcBright;
 
-    float2 RES;
+    // float2 RES;
 // }
 
 float hash(float2 p) {
@@ -74,9 +74,9 @@ float4 noise(int u) {
     );
 }
 
-float3 getColor(float2 uv, float lod)
+float3 getColor(float2 uv, float lod, float SrcContrast, float SrcBright, Texture2D tex, SamplerState TexSampler)
 {
-	float4 col = clamp(((tex.SampleLevel(smp, uv, lod) - 0.5) * SrcContrast + 0.5 * SrcBright), 0.0, 1.0);
+	float4 col = clamp(((tex.SampleLevel(TexSampler, uv, lod) - 0.5) * SrcContrast + 0.5 * SrcBright), 0.0, 1.0);
 	return col.xyz;
 }
 
@@ -89,14 +89,14 @@ float compsignedmax(float3 c)
     return c.z;
 }
 
-float2 getGrad(float2 uv, float eps)
+float2 getGrad(float2 uv, float eps, float SrcContrast, float SrcBright, Texture2D tex, SamplerState TexSampler)
 {
 	float2 d = float2(eps, 0.);
 	float lod = log2(2.*eps);
 	//f'(x) ~= [f(x+h) - f(x-h)] / (2h)
 	return float2(
-           compsignedmax(getColor(uv + d.xy, lod) - getColor(uv - d.xy, lod)),
-           compsignedmax(getColor(uv + d.yx, lod) - getColor(uv - d.yx, lod))
+           compsignedmax(getColor(uv + d.xy, lod, SrcContrast, SrcBright, tex, TexSampler) - getColor(uv - d.xy, lod, SrcContrast, SrcBright, tex, TexSampler)),
+           compsignedmax(getColor(uv + d.yx, lod, SrcContrast, SrcBright, tex, TexSampler) - getColor(uv - d.yx, lod, SrcContrast, SrcBright, tex, TexSampler))
            ) / (2. * eps);
 }
 
@@ -111,8 +111,19 @@ float4 debugCircle(float2 uv, float2 center, float radius, float aspect, float b
            lerp(float3(0.0, 1.0, 0.0), float3(0.0, 0.0, 1.0), bend*2-1.), alpha )* step(dist, radius);
 }
 
-float4 Paint(float2 uv)
+float4 Paint(
+    float2 uv,
+    float2 RES,
+    float BrushSize,
+    float StrokeBend,
+    float QualityPercent,
+    float SrcContrast,
+    float SrcBright,
+    Texture2D tex, 
+    SamplerState TexSampler
+    )
 {
+    float layerScale = QualityPercent / 100.0;
     float aspect = RES.x / RES.y;
 
     // Canvas Texture
@@ -140,8 +151,8 @@ float4 Paint(float2 uv)
     //If scale layerScale each time, times it will take to scale down from NumY to 10.
 
     float4 col = canv;//float4(getColor(uv,0.), 1.);/
-
-    for (int layer = 9; layer >= 0; layer--)
+    
+    for (int layer = 11; layer >= 0; layer--)
     {
         if (layer > maxLayer) continue; //for (int layer = min(maxLayer, 11) ... no variable in for loop
 
@@ -151,7 +162,7 @@ float4 Paint(float2 uv)
 
         
         int n0 = int(dot(floor(float2(uv/* / RES.xy*/ * float2(NumX2, NumY2))), float2(1, NumX2)));
-		//return float(n0) / NumGrid;
+		// return float(n0) / NumGrid;
 		
         for (int ni = 0; ni < 25; ni++) //nine near grids
         {
@@ -167,7 +178,7 @@ float4 Paint(float2 uv)
             brushPos.xy += gridW * (noise(gridsumn + layer * 123).xy - 0.5)*0.8;
 
             //Brush Direction -----------
-            float2 grad = getGrad(brushPos.xy, gridW * 1.)+getGrad(brushPos.xy,gridW*.1);
+            float2 grad = getGrad(brushPos.xy, gridW * 1., SrcContrast, SrcBright, tex, TexSampler)+getGrad(brushPos.xy,gridW*.1, SrcContrast, SrcBright, tex, TexSampler);
             
             grad /= 2.;
             grad += sin(uv*100.) * 5.45; // add random noise (for plain area
@@ -181,9 +192,12 @@ float4 Paint(float2 uv)
             // width and length of brush stroke --------------------------------------------------------------------------------------------------------------
             float bw = (gridW-.6*gridW0)*4.8; //gridW * .75;
             float bl = bw;
-    		float stretch=sqrt(1.3*pow(1.1,1./float(layer+1)));
+    		float stretch=sqrt(1.43*pow(1.,1./float(layer+1)));
 		    bw*=BrushSize*(.4+.4*noise(gridsumn).y)/stretch;
 		    bl*=BrushSize*(.4+.4*noise(gridsumn).z)*stretch;
+		    
+ 		    bw /= 1.-.25*abs(StrokeBend);
+		    bw = (l*.008 < bw && bw < gridW0*10 && layer != maxLayer) ? 0 : bw; 
             
             // convert to local space --------------------------------------------------------------------------------------------------------------
         	float2 uv_screen = (uv - brushPos.xy) * float2(aspect, 1.);
@@ -196,7 +210,6 @@ float4 Paint(float2 uv)
 			pos.x /= 1.-.25*abs(StrokeBend);
 			
             pos += float2(0.5, 0.5);
-
 
 			// Brush shape ----------------------------------------------------------------------------------------------------------------------
 			float s = 0;
@@ -226,7 +239,7 @@ float4 Paint(float2 uv)
 			}
             
             float4 dcoll;
-            dcoll.xyz = getColor(brushPos.xy, 1.0);
+            dcoll.xyz = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, tex, TexSampler);
             col = lerp(col, dcoll, s);
 //            dcoll = debugCircle(uv, brushPos.xy, gridW / 4, aspect, float(layer) / float(maxLayer));
 //            col = lerp(col, dcoll, dcoll.w);
@@ -237,17 +250,24 @@ float4 Paint(float2 uv)
 }
 };
 
-float4 main (float4 fragCoord : SV_POSITION): SV_TARGET
-{
-    float2 uv = fragCoord.xy/uResolution;
-    Functions F;
-    F.BrushDetail = 0.1;
-    F.StrokeBend = -1.;
-    F.BrushSize = 1.;
-    F.layerScale = float(QUALITY_PERCENT) / 100.0;
-    F.SrcContrast = 1.4;
-    F.SrcBright = 1.;
-    F.RES = float2(1920, 1440);
 
-    return F.Paint(uv);
-}
+Functions F;
+return F.Paint(
+    UV,
+    Resolution,
+    BrushSize,
+    StrokeBend,
+    QualityPercent,
+    Contrast,
+    Brightness,
+    Tex, 
+    TexSampler
+);
+
+// F.BrushDetail = 0.1;
+// F.StrokeBend = -1.;
+// F.BrushSize = 1.;
+// F.layerScale = float(QUALITY_PERCENT) / 100.0;
+// F.SrcContrast = 1.4;
+// F.SrcBright = 1.;
+// F.RES = float2(1920, 1440);

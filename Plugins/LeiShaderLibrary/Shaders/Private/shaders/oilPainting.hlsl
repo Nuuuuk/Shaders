@@ -2,7 +2,7 @@ cbuffer vars : register(b0) {
 	float2 uResolution;
 };
 
-Texture2D tex : register(t0);
+Texture2D srctex : register(t0);
 SamplerState smp : register(s0);
 
 struct Functions
@@ -74,7 +74,7 @@ float4 noise(int u) {
     );
 }
 
-float3 getColor(float2 uv, float lod)
+float3 getColor(Texture2D tex, float2 uv, float lod)
 {
 	float4 col = clamp(((tex.SampleLevel(smp, uv, lod) - 0.5) * SrcContrast + 0.5 * SrcBright), 0.0, 1.0);
 	return col.xyz;
@@ -89,14 +89,14 @@ float compsignedmax(float3 c)
     return c.z;
 }
 
-float2 getGrad(float2 uv, float eps)
+float2 getGrad(Texture2D tex, float2 uv, float eps)
 {
 	float2 d = float2(eps, 0.);
 	float lod = log2(2.*eps);
 	//f'(x) ~= [f(x+h) - f(x-h)] / (2h)
 	return float2(
-           compsignedmax(getColor(uv + d.xy, lod) - getColor(uv - d.xy, lod)),
-           compsignedmax(getColor(uv + d.yx, lod) - getColor(uv - d.yx, lod))
+           compsignedmax(getColor(tex, uv + d.xy, lod) - getColor(tex, uv - d.xy, lod)),
+           compsignedmax(getColor(tex, uv + d.yx, lod) - getColor(tex, uv - d.yx, lod))
            ) / (2. * eps);
 }
 
@@ -111,12 +111,12 @@ float4 debugCircle(float2 uv, float2 center, float radius, float aspect, float b
            lerp(float3(0.0, 1.0, 0.0), float3(0.0, 0.0, 1.0), bend*2-1.), alpha )* step(dist, radius);
 }
 
-float4 Paint(float2 uv)
+float4 Paint(Texture2D tex, float2 uv)
 {
     float aspect = RES.x / RES.y;
 
     // Canvas Texture
-    float canv = 0.0;
+    float canv = 10.0;
 
 //    canv = max(canv, (noise(uv * float2(0.7, 0.03).xy)).x);
 //    canv = max(canv, (noise(uv * float2(0.7, 0.03).yx * aspect)).x);
@@ -139,9 +139,9 @@ float4 Paint(float2 uv)
     int maxLayer = int(log2(10.0 / float(NumY)) / log2(layerScale));
     //If scale layerScale each time, times it will take to scale down from NumY to 10.
 
-    float4 col = canv;//float4(getColor(uv,0.), 1.);/
+    float4 col = canv;//float4(getColor(tex, uv,0.), 1.);/
 
-    for (int layer = 9; layer >= 0; layer--)
+    for (int layer = 11; layer >= 0; layer--)
     {
         if (layer > maxLayer) continue; //for (int layer = min(maxLayer, 11) ... no variable in for loop
 
@@ -167,7 +167,7 @@ float4 Paint(float2 uv)
             brushPos.xy += gridW * (noise(gridsumn + layer * 123).xy - 0.5)*0.8;
 
             //Brush Direction -----------
-            float2 grad = getGrad(brushPos.xy, gridW * 1.)+getGrad(brushPos.xy,gridW*.1);
+            float2 grad = getGrad(tex, brushPos.xy, gridW * 1.)+getGrad(tex, brushPos.xy,gridW*.1);
             
             grad /= 2.;
             grad += sin(uv*100.) * 5.45; // add random noise (for plain area
@@ -181,9 +181,12 @@ float4 Paint(float2 uv)
             // width and length of brush stroke --------------------------------------------------------------------------------------------------------------
             float bw = (gridW-.6*gridW0)*4.8; //gridW * .75;
             float bl = bw;
-    		float stretch=sqrt(1.3*pow(1.1,1./float(layer+1)));
+    		float stretch=sqrt(1.43*pow(1.,1./float(layer+1)));
 		    bw*=BrushSize*(.4+.4*noise(gridsumn).y)/stretch;
 		    bl*=BrushSize*(.4+.4*noise(gridsumn).z)*stretch;
+		    
+ 		    bw /= 1.-.25*abs(StrokeBend);
+		    bw = (l*.008 < bw && bw < gridW0*10 && layer != maxLayer) ? 0 : bw; 
             
             // convert to local space --------------------------------------------------------------------------------------------------------------
         	float2 uv_screen = (uv - brushPos.xy) * float2(aspect, 1.);
@@ -226,7 +229,7 @@ float4 Paint(float2 uv)
 			}
             
             float4 dcoll;
-            dcoll.xyz = getColor(brushPos.xy, 1.0);
+            dcoll.xyz = getColor(tex, brushPos.xy, 1.0);
             col = lerp(col, dcoll, s);
 //            dcoll = debugCircle(uv, brushPos.xy, gridW / 4, aspect, float(layer) / float(maxLayer));
 //            col = lerp(col, dcoll, dcoll.w);
@@ -249,5 +252,5 @@ float4 main (float4 fragCoord : SV_POSITION): SV_TARGET
     F.SrcBright = 1.;
     F.RES = float2(1920, 1440);
 
-    return F.Paint(uv);
+    return F.Paint(srctex, uv);
 }
