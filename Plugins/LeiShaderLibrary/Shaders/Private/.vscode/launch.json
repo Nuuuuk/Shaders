@@ -1,0 +1,11 @@
+{
+    "versxon": "0.2.9",
+    "configurations":[
+        {
+            "type": "shadered",
+            "request": "launch",
+            "name": "Debug project.sprj",
+            "program": "${workspaceFolder}/project.sprj",
+        }
+    ]
+}

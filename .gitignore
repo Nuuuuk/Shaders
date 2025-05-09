@@ -1,3 +1,6 @@
+Docs/**/*.jpg
+Docs/**/*.png
+Docs/**/*.wbk
 
 # Visual Studio 2015 user specific files
 .vs/
