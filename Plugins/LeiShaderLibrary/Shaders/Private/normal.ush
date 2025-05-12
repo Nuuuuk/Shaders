@@ -1,0 +1,31 @@
+struct Functions
+{
+
+float getColorVal(float2 uv, Texture2D tex, SamplerState TexSampler)
+{
+	float3 col = tex.SampleLevel(TexSampler, uv, 0).xyz;
+	return length(col);
+}
+
+float2 GetGrad(float2 uv, float delta, Texture2D tex, SamplerState TexSampler)
+{
+    float2 d = float2(delta, 0);
+    return float2(
+        getColorVal(uv + d.xy, tex, TexSampler) - getColorVal(uv - d.xy, tex, TexSampler),
+        getColorVal(uv + d.yx, tex, TexSampler) - getColorVal(uv - d.yx, tex, TexSampler)
+    ) / delta;
+}
+
+float4 GenerateNormal(float2 uv, Texture2D tex, SamplerState TexSampler)
+{
+    float delta = .001;
+    float2 grad = GetGrad(uv, delta, tex, TexSampler);
+    
+    float3 normal = normalize(float3(grad, 150.0));
+    return float4(normal.xyz,1.);
+}
+};
+
+Functions F;
+
+return F.GenerateNormal(UV, Tex, TexSampler);

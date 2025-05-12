@@ -119,6 +119,8 @@ float4 Paint(
     float QualityPercent,
     float SrcContrast,
     float SrcBright,
+    int maxLayer_Manual,
+    float Progress,
     Texture2D tex, 
     SamplerState TexSampler
     )
@@ -129,22 +131,21 @@ float4 Paint(
     // Canvas Texture
     float canv = 0.0;
 
-//    canv = max(canv, (noise(uv * float2(0.7, 0.03).xy)).x);
-//    canv = max(canv, (noise(uv * float2(0.7, 0.03).yx * aspect)).x);
-//    canv = pow(canv, 3); //return canv;
-//    canv = float4(float(0.93 + 0.07 * canv).xxx, 1.0);
+   canv = max(canv, (noise(uv * float2(0.7, 0.03).xy)).x);
+   canv = max(canv, (noise(uv * float2(0.7, 0.03).yx * aspect)).x);
+   canv = pow(canv, 3); //return canv;
+   canv = float4(float(0.93 + 0.07 * canv).xxx, 1.0);
 
     // Brush Layers
     float3 brushPos;
 
-    int NumGrid = int(float(0x10000 / 2.5) * min(pow(RES.x / 1920.0, 5.23), 1.0) * (1.0 - layerScale * layerScale));
-    //NumGrid = 255;
+    int NumGrid = int(float(0x10000 / 2) * min(pow(RES.x * RES.y / 1920. / 1440., .5), 1.0) * (1.0 - layerScale * layerScale));
+    //NumGrid = 10000;
     
     int NumX = int(sqrt(float(NumGrid) * aspect) + 0.5);
     int NumY = int(sqrt(float(NumGrid) / aspect) + 0.5);
     float gridW0 = /*RES.x*/ 1 / float(NumX);
     
-    int gridsum = 0;
     // min-scale layer has at least 10 strokes in y
     // NumY*layerScaleFact^maxLayer==10
     int maxLayer = int(log2(10.0 / float(NumY)) / log2(layerScale));
@@ -152,9 +153,21 @@ float4 Paint(
 
     float4 col = canv;//float4(getColor(uv,0.), 1.);/
     
-    for (int layer = 11; layer >= 0; layer--)
+
+    int gridsum = 0;
+    int preGridsum = 0;
+    for (int layer = 20; layer >= 0; layer--)
     {
-        if (layer > maxLayer) continue; //for (int layer = min(maxLayer, 11) ... no variable in for loop
+        if (layer > maxLayer || layer > maxLayer_Manual) continue;
+        int NumX2 = int(float(NumX) * pow(layerScale, float(layer)) + 0.5);
+        int NumY2 = int(float(NumY) * pow(layerScale, float(layer)) + 0.5);
+        preGridsum += NumX2 * NumY2;
+    }
+    int maxgridsum = preGridsum * Progress;
+
+    for (int layer = 20; layer >= 0; layer--)
+    {
+        if (layer > maxLayer || layer > maxLayer_Manual) continue; //for (int layer = min(maxLayer, 11) ... no variable in for loop
 
         int NumX2 = int(float(NumX) * pow(layerScale, float(layer)) + 0.5);
         int NumY2 = int(float(NumY) * pow(layerScale, float(layer)) + 0.5);
@@ -171,80 +184,78 @@ float4 Paint(
 
             int gridn = n0 + nx + ny * NumX2;
             int gridsumn = gridsum + gridn;
-            brushPos.xy = (float2(gridn % NumX2, gridn / NumX2) + 0.5) / float2(NumX2, NumY2)/* * RES*/;
-            brushPos.x += gridW * 0.5 * (float((gridn / NumX2) % 2) - 0.5);
+            if (gridsumn <= maxgridsum)
+            {
+                brushPos.xy = (float2(gridn % NumX2, gridn / NumX2) + 0.5) / float2(NumX2, NumY2)/* * RES*/;
+                brushPos.x += gridW * 0.5 * (float((gridn / NumX2) % 2) - 0.5);
 
-            //randomize brushPos
-            brushPos.xy += gridW * (noise(gridsumn + layer * 123).xy - 0.5)*0.8;
+                //randomize brushPos
+                brushPos.xy += gridW * (noise(gridsumn + layer * 123).xy - 0.5);//*0.8;
 
-            //Brush Direction -----------
-            float2 grad = getGrad(brushPos.xy, gridW * 1., SrcContrast, SrcBright, tex, TexSampler)+getGrad(brushPos.xy,gridW*.1, SrcContrast, SrcBright, tex, TexSampler);
-            
-            grad /= 2.;
-            grad += sin(uv*100.) * 5.45; // add random noise (for plain area
-            
-            float l = length(grad);
-            float2 n = normalize(grad);
-            float2 t = N(n);
-            //return float4(grad,1.,1.);
-            
-            
-            // width and length of brush stroke --------------------------------------------------------------------------------------------------------------
-            float bw = (gridW-.6*gridW0)*4.8; //gridW * .75;
-            float bl = bw;
-    		float stretch=sqrt(1.43*pow(1.,1./float(layer+1)));
-		    bw*=BrushSize*(.4+.4*noise(gridsumn).y)/stretch;
-		    bl*=BrushSize*(.4+.4*noise(gridsumn).z)*stretch;
-		    
- 		    bw /= 1.-.25*abs(StrokeBend);
-		    bw = (l*.008 < bw && bw < gridW0*10 && layer != maxLayer) ? 0 : bw; 
-            
-            // convert to local space --------------------------------------------------------------------------------------------------------------
-        	float2 uv_screen = (uv - brushPos.xy) * float2(aspect, 1.);
-            float2 pos = float2(dot(uv_screen, n), dot(uv_screen, t)) / float2(bw, bl);
-            pos *= 0.5;
-            
-            // Bend
-            pos.x -= .225*StrokeBend * (noise(gridsumn).x - .5)*2;
-			pos.x += pos.y*pos.y*StrokeBend;
-			pos.x /= 1.-.25*abs(StrokeBend);
-			
-            pos += float2(0.5, 0.5);
+                //Brush Direction -----------
+                float2 grad = getGrad(brushPos.xy, gridW * 1., SrcContrast, SrcBright, tex, TexSampler)+getGrad(brushPos.xy,gridW*.1, SrcContrast, SrcBright, tex, TexSampler);
+                
+                grad /= 2.;
+                grad += sin(uv*100.) * .005; // add random noise (for plain area
+                
+                float l = length(grad);
+                float2 n = normalize(grad);
+                float2 t = N(n);
+                //return float4(grad,1.,1.);
+                
+                
+                // width and length of brush stroke --------------------------------------------------------------------------------------------------------------
+                float bw = (gridW-.6*gridW0)*1.2; //gridW * .75;
+                
+                float bl = bw;
+                float stretch=sqrt(1.43*pow(3.,1./float(layer+1)));
+                bw*=BrushSize*(.8+.4*noise(gridsumn).y)/stretch;
+                bl*=BrushSize*(.8+.4*noise(gridsumn).z)*stretch;
+                
+                bw /= 1.-.25*abs(StrokeBend);
+                bw = (l*.001 < bw && bw < gridW0*0.8 && layer != maxLayer) ? 0 : bw; 
+                
+                // convert to local space --------------------------------------------------------------------------------------------------------------
+                float2 uv_screen = (uv - brushPos.xy) * float2(aspect, 1.);
+                float2 pos = float2(dot(uv_screen, n), dot(uv_screen, t)) / float2(bw, bl);
+                pos *= 0.5;
+                
+                // Bend
+                pos.x -= .225*StrokeBend * (noise(gridsumn).x - .5)*2;
+                pos.x += pos.y*pos.y*StrokeBend;
+                pos.x /= 1.-.25*abs(StrokeBend);
+                
+                pos += float2(0.5, 0.5);
 
-			// Brush shape ----------------------------------------------------------------------------------------------------------------------
-			float s = 0;
-			if (pos.x>=0 && pos.x<=1 && pos.y>=0 && pos.y<=1)
-			{
-				s = 1.;
-			    s = pos.x * (1. - pos.x) * 4. * pos.y * (1. - pos.y) * 4. * 2.53;
-				s = clamp((s - 0.5) * 2.,0.,1.);
-				// ----------------------------------------------
-				float fur = noise(pos * float2(0.01,0.001) * 4.4).x + noise(pos * float2(0.01,0.001) * 0.31).x;
-				
-				float s_ = s;
-				float2 pos_ = pos;
-				
-				s *= fur;
-				// ----------------------------------------------
-				float mask = 1 - pos_.y;
-				mask *= max(
-					pow( (cos(pos_.x * 3.14159 * 2 + 1.5 * (noise(gridsumn).x-.5))+1.)/2., 1.2) - 0.135, 
-					0.35 * exp(-pos_.y * pos_.y * 5) * (1. - pos_.y)
-				);
-				mask = clamp(mask+0.6, 0., 1.);
-			
-				s = s * 0.43 + s_ * mask * 0.55;
-				s = pow(s, 1.2)  * pow(1.285 - pos_.y, 0.8) - .25 * pos_.y;
-				s = clamp(s,0.,1.);
-			}
-            
-            float4 dcoll;
-            dcoll.xyz = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, tex, TexSampler);
-            col = lerp(col, dcoll, s);
-//            dcoll = debugCircle(uv, brushPos.xy, gridW / 4, aspect, float(layer) / float(maxLayer));
-//            col = lerp(col, dcoll, dcoll.w);
+                // Brush shape ----------------------------------------------------------------------------------------------------------------------
+                float s = 0; float mask;
+                
+                    s = pos.x * (1. - pos.x) * 4. * pos.y * (1. - pos.y) * 4. * 2.53;
+                    s = clamp((s - 0.5) * 2.,0.,1.);
+                    // ----------------------------------------------
+                    float s_ = s;
+                    float fur = noise(pos * float2(0.01,0.001) * 4.4).x + noise(pos * float2(0.01,0.001) * 0.31).x;
+                    s *= fur;
+                    // ----------------------------------------------
+                    mask = max(
+                        pow( (cos(pos.x * 3.14159 * 2. + 1.5 * (noise(-gridsumn).x-.5))+1.)/2., 1.2) - 0.135, 
+                        0.35 * exp(-pos.y * pos.y * 5.) * (1. - pos.y)
+                    ) * (1. - pos.y);
+                    mask = clamp(mask+0.3, 0., 1.);
+                    s = s * 0.43 + s_ * mask * .55 - .5 * pos.y;
+                    
+                    s = clamp(s,0.,1.) * step(-0.5,-abs(pos.x-.5)) * step(-0.5,-abs(pos.y-.5));
+                    //s = pow(s, 1.2) * pow(1.285 - pos.y, 0.8) - .25 * pos.y;
+
+                float4 dcoll;
+                dcoll.xyz = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, tex, TexSampler);
+                col = lerp(col, dcoll, s);
+                // dcoll = debugCircle(uv, brushPos.xy, gridW / 4, aspect, float(layer) / float(maxLayer));
+                // col = lerp(col, dcoll, dcoll.w);
+            }
         }
     	gridsum+=NumX2*NumY2;
+        if (gridsum > maxgridsum) break;
     }
     return col;
 }
@@ -260,6 +271,8 @@ return F.Paint(
     QualityPercent,
     Contrast,
     Brightness,
+    MaxLayer,
+    Progress,
     Tex, 
     TexSampler
 );
