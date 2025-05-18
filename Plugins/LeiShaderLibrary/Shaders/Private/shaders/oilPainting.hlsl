@@ -167,10 +167,12 @@ float4 Paint(Texture2D tex, float2 uv)
             brushPos.xy += gridW * (noise(gridsumn + layer * 123).xy - 0.5);//*0.8;
 
             //Brush Direction -----------
-            float2 grad = getGrad(tex, brushPos.xy, gridW * 1.)+getGrad(tex, brushPos.xy,gridW*.1);
+            float sampleDist = .1;
+            float2 grad = getGrad(tex, brushPos.xy, gridW * sampleDist)+getGrad(tex, brushPos.xy,gridW * sampleDist);
             
             grad /= 2.;
-            grad += sin(uv*100.) * .005; // add random noise (for plain area
+            grad += sin(uv*100.) * .05
+            ; // add random noise (for plain area
             
             float l = length(grad);
             float2 n = normalize(grad);
@@ -208,7 +210,7 @@ float4 Paint(Texture2D tex, float2 uv)
 				s = clamp((s - 0.5) * 2.,0.,1.);
 				// ----------------------------------------------
 				float s_ = s;
-				float fur = noise(pos * float2(0.01,0.001) * 4.4).x + noise(pos * float2(0.01,0.001) * 0.31).x;
+				float fur = noise(pos * float2(0.01,0.001) * 4.4).x + noise(pos * float2(0.01,0.001) * 1.21).x;
 				s *= fur;
 				// ----------------------------------------------
 				mask = max(
@@ -217,10 +219,12 @@ float4 Paint(Texture2D tex, float2 uv)
 				) * (1. - pos.y);
 				mask = clamp(mask+0.3, 0., 1.);
 				s = s * 0.43 + s_ * mask * .55 - .5 * pos.y;
+				s *= 1.;
 				
 				s = clamp(s,0.,1.) * step(-0.5,-abs(pos.x-.5)) * step(-0.5,-abs(pos.y-.5));
 				//s = pow(s, 1.2) * pow(1.285 - pos.y, 0.8) - .25 * pos.y;
-
+				s *= .75;
+			
             float4 dcoll;
             dcoll.xyz = getColor(tex, brushPos.xy, 1.0);// * lerp(s*.13+.87,1.,mask);
             col = lerp(col, dcoll, s);
@@ -239,11 +243,11 @@ float4 main (float4 fragCoord : SV_POSITION): SV_TARGET
     Functions F;
     F.BrushDetail = 0.1;
     F.StrokeBend = -1.;
-    F.BrushSize = 1.5;
+    F.BrushSize = 1;
     F.layerScale = float(QUALITY_PERCENT) / 100.0;
     F.SrcContrast = 1.4;
     F.SrcBright = 0.9;
-    F.RES = float2(1920, 1080)*1.25;
+    F.RES = float2(3800, 3800)*0.5;
 
     return F.Paint(srctex, uv);
 }
