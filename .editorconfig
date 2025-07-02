@@ -1,0 +1,2 @@
+[*.dll]
+dotnet_diagnostic.CA2000.severity = none

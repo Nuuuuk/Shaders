@@ -55,7 +55,26 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-			
+
+
+	//virtual void Tick(float DeltaTime) override;
+
+protected:
+	UFUNCTION(BlueprintCallable, Category = "Paint")
+	bool ProjectCrosshairToPaintSurface(
+		FName CanvasTag,
+		float TraceDistance,
+		float ConeRadius,
+		int32 NumRays,
+		UPARAM(ref) FHitResult& OutHit,
+		UPARAM(ref) TArray<FHitResult>& OutExtraHits
+	);
+
+	UFUNCTION(BlueprintCallable, Category = "Debug")
+	void DummyDebugFunction();
+
+	UPROPERTY(/*BlueprintReadWrite*/)
+	UCameraComponent* CachedCamera = nullptr;
 
 protected:
 
@@ -68,5 +87,7 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-};
 
+private:
+    UCameraComponent* GetPlayerCamera();
+};

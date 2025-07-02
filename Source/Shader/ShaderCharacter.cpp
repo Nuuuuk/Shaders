@@ -57,6 +57,91 @@ AShaderCharacter::AShaderCharacter()
 //////////////////////////////////////////////////////////////////////////
 // Input
 
+void AShaderCharacter::DummyDebugFunction()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("DummyDebugFunction CALLED"));
+}
+
+UCameraComponent* AShaderCharacter::GetPlayerCamera()
+{
+	TArray<UCameraComponent*> Cameras;
+	GetComponents<UCameraComponent>(Cameras);
+
+	for (UCameraComponent* CAM : Cameras)
+	{
+		if (CAM && CAM->IsActive())
+		{
+			CachedCamera = CAM;
+			return CachedCamera;
+		}
+	}
+
+	return nullptr;
+}
+
+bool AShaderCharacter::ProjectCrosshairToPaintSurface(
+	FName CanvasTag,
+	float TraceDistance,
+	float ConeRadius,
+	int32 NumRays,
+	UPARAM(ref) FHitResult& OutHit,
+	UPARAM(ref) TArray<FHitResult>& OutExtraHits
+)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("ProjectCrosshairToPaintSurface CALLED"));
+	UCameraComponent* Camera = GetPlayerCamera();
+	if (!Camera) return false;
+
+	OutExtraHits.Reset();
+
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + Camera->GetForwardVector() * TraceDistance;
+
+	FHitResult Hit;
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this); 
+	CollisionParams.bReturnFaceIndex = true;
+	CollisionParams.bTraceComplex = true;
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, CollisionParams);
+	//DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 1.0f, 0, 1.0f);
+
+	UE_LOG(LogTemp, Warning, TEXT("%d"), Hit.FaceIndex);
+	if (bHit && Hit.GetActor() && Hit.GetActor()->ActorHasTag(CanvasTag))
+	{
+		if (Hit.bBlockingHit && Hit.FaceIndex != INDEX_NONE && Hit.Component.IsValid())
+		{
+			UPrimitiveComponent* Pirm = Hit.GetComponent();
+			OutHit = Hit;
+			//Cone tracing
+			FVector HitPoint = Hit.ImpactPoint;
+			FVector HitNormal = Hit.ImpactNormal;
+
+			if (NumRays <= 0) return false;
+			
+			for (int32 i = 0; i < NumRays; ++i)
+			{
+				float Angle = (2. * PI / NumRays) * i;
+				FVector offset = FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0) * ConeRadius;
+
+				FVector ConeStart = Start;
+				FVector ConeEnd = HitPoint + offset;
+
+				FHitResult ConeHit;
+				GetWorld()->LineTraceSingleByChannel(ConeHit, ConeStart, ConeEnd, ECC_Visibility, CollisionParams);
+				if (ConeHit.bBlockingHit && ConeHit.GetActor()->ActorHasTag(CanvasTag))
+				{
+					OutExtraHits.Add(ConeHit);
+					DrawDebugPoint(GetWorld(), ConeHit.ImpactPoint, 5.f, FColor::Blue, false, 0.1f);
+				}
+			}
+			return true;
+		}
+	}
+	return false;
+}
+/////////////////////////////////// UE ///////////////////////////////////
+
 void AShaderCharacter::NotifyControllerChanged()
 {
 	Super::NotifyControllerChanged();

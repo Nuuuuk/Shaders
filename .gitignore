@@ -1,6 +1,6 @@
-Docs/**/*.jpg
-Docs/**/*.png
-Docs/**/*.wbk
+# Docs/**/*.jpg
+# Docs/**/*.png
+# Docs/**/*.wbk
 
 # Visual Studio 2015 user specific files
 .vs/
@@ -29,10 +29,10 @@ Docs/**/*.wbk
 *.a
 *.lib
 
-Content/Characters/*
-Content/Developers/*
-Content/DesertRuins/*
-Content/StarterContent/*
+# Content/Characters/*
+# Content/Developers/*
+# Content/DesertRuins/*
+# Content/StarterContent/*
 
 # Executables
 *.exe
@@ -53,7 +53,7 @@ Content/StarterContent/*
 # Precompiled Assets
 SourceArt/**/*.png
 SourceArt/**/*.tga
-SourceArt/*
+SourceArt/**/backup/*
 
 # Binary Files
 Binaries/*
