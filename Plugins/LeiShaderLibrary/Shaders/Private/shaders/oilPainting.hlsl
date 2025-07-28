@@ -243,11 +243,11 @@ float4 main (float4 fragCoord : SV_POSITION): SV_TARGET
     Functions F;
     F.BrushDetail = 0.1;
     F.StrokeBend = -1.;
-    F.BrushSize = 1;
+    F.BrushSize = 1.2;
     F.layerScale = float(QUALITY_PERCENT) / 100.0;
-    F.SrcContrast = 1.4;
-    F.SrcBright = 0.9;
-    F.RES = float2(3800, 3800)*0.5;
+    F.SrcContrast = 1.15;
+    F.SrcBright = 1.15;
+    F.RES = float2(3440, 2293)*.5;
 
     return F.Paint(srctex, uv);
 }
