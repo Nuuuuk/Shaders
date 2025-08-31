@@ -34,7 +34,12 @@
 		<object type="texture" path="tex5.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat" />
 		<object type="texture" path="tex6.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat" />
 		<object type="texture" path="tex7.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat" />
-		<object type="texture" path="tex8.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat">
+		<object type="texture" path="tex8.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat" />
+		<object type="texture" path="A-1.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat" />
+		<object type="texture" path="A-2.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat">
+			<bind slot="1" name="Main" />
+		</object>
+		<object type="texture" path="B.jpg" vflip="false" min_filter="Linear" mag_filter="Nearest" wrap_s="Repeat" wrap_t="Repeat">
 			<bind slot="0" name="Main" />
 		</object>
 	</objects>
@@ -44,9 +49,9 @@
 		<entry type="file" name="Main" shader="vs" />
 		<entry type="file" name="Main" shader="ps" />
 		<entry type="camera" fp="false">
-			<distance>20</distance>
+			<distance>24</distance>
 			<pitch>89</pitch>
-			<yaw>22</yaw>
+			<yaw>28</yaw>
 			<roll>0</roll>
 		</entry>
 		<entry type="clearcolor" r="0" g="0" b="0" a="0" />
