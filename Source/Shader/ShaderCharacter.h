@@ -64,10 +64,7 @@ protected:
 	bool ProjectCrosshairToPaintSurface(
 		FName CanvasTag,
 		float TraceDistance,
-		float ConeRadius,
-		int32 NumRays,
-		UPARAM(ref) FHitResult& OutHit,
-		UPARAM(ref) TArray<FHitResult>& OutExtraHits
+		UPARAM(ref) FHitResult& OutHit
 	);
 
 	UFUNCTION(BlueprintCallable, Category = "Debug")
