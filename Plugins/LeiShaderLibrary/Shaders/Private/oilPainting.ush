@@ -122,20 +122,24 @@ float4 Paint(
     float SrcBright,
     int maxLayer_Manual,
     float Progress,
-    Texture2D tex, 
-    SamplerState TexSampler
+    Texture2D SourceTex,
+    Texture2D MaskTex,
+    float3 BottomCd,
+    SamplerState TexSampler,
+    SamplerState Tex1Sampler
     )
 {
     float layerScale = QualityPercent / 100.0;
     float aspect = RES.x / RES.y;
 
     // Canvas Texture
-    float canv = 0.0;
-
-    canv = max(canv, (noise(uv * float2(0.7, 0.03).xy)).x);
-    canv = max(canv, (noise(uv * float2(0.7, 0.03).yx * aspect)).x);
-    canv = pow(canv, 3); //return canv;
-    canv = float4(float(0.93 + 0.07 * canv).xxx, 1.0);
+    float4 canv = float4(BottomCd, 1.);
+    // float canv = 0.0;
+        
+    // canv = max(canv, (noise(uv * float2(0.7, 0.03).xy)).x);
+    // canv = max(canv, (noise(uv * float2(0.7, 0.03).yx * aspect)).x);
+    // canv = pow(canv, 3); //return canv;
+    // canv = float4(float(0.93 + 0.07 * canv).xxx, 1.0);
 
     // Brush Layers
     float3 brushPos;
@@ -191,9 +195,15 @@ float4 Paint(
 
                 //randomize brushPos
                 brushPos.xy += gridW * (noise(gridsumn + layer * 123).xy - 0.5);//*0.8;
+                
+                float grayMask = MaskTex.SampleLevel(Tex1Sampler, brushPos.xy, 0).x;
+                float factor = layer / float(maxLayer + 1);
+                if (grayMask >= factor) continue;
+
+
 
                 //Brush Direction -----------
-                float2 grad = getGrad(brushPos.xy, gridW * sampleDistFrac, SrcContrast, SrcBright, tex, TexSampler)+getGrad(brushPos.xy,gridW * sampleDistFrac, SrcContrast, SrcBright, tex, TexSampler);
+                float2 grad = getGrad(brushPos.xy, gridW * sampleDistFrac, SrcContrast, SrcBright, SourceTex, TexSampler)+getGrad(brushPos.xy,gridW * sampleDistFrac, SrcContrast, SrcBright, SourceTex, TexSampler);
                 
                 grad /= 2.;
                 grad += sin(uv*100.) * .005; // add random noise (for plain area
@@ -249,7 +259,7 @@ float4 Paint(
                     s *= 0.75;
 
                 float4 dcoll;
-                dcoll.xyz = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, tex, TexSampler);
+                dcoll.xyz = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, SourceTex, TexSampler);
                 col = lerp(col, dcoll, s);
                 // dcoll = debugCircle(uv, brushPos.xy, gridW / 4, aspect, float(layer) / float(maxLayer));
                 // col = lerp(col, dcoll, dcoll.w);
@@ -275,8 +285,11 @@ return F.Paint(
     Brightness,
     MaxLayer,
     Progress,
-    Tex, 
-    TexSampler
+    SourceTex,
+    MaskTex,
+    BottomCd,
+    SourceTexSampler,
+    MaskTexSampler
 );
 
 // F.BrushDetail = 0.1;
