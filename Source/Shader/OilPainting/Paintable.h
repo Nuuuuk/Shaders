@@ -23,7 +23,7 @@ class SHADER_API IPaintable
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
-	void OnRayHit(const FVector& HitPosition);
+	void OnRayHit(const FVector& HitPosition, const FVector2D& HitUV);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
 	void OnRayExit();
@@ -33,4 +33,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
 	void SetBrushHardness(float HardnessOffset);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
+	void Paint();
 };
