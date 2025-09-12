@@ -36,4 +36,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
 	void Paint();
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
+	void Capture();
 };
