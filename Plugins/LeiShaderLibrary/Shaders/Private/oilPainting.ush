@@ -116,6 +116,7 @@ float4 Paint(
     float2 RES,
     float BrushSize,
     float StrokeBend,
+    float StrokeAspectRatio,
     float QualityPercent,
     float sampleDistFrac,
     float SrcContrast,
@@ -144,7 +145,7 @@ float4 Paint(
     // Brush Layers
     float3 brushPos;
 
-    int NumGrid = int(float(0x10000 / 2) * min(pow(RES.x * RES.y / 1920. / 1440., .5), 1.0) * (1.0 - layerScale * layerScale));
+    int NumGrid = int(float(0x10000 / 1) * min(pow(RES.x * RES.y / 1920. / 1440., .5), 1) * (1.0 - layerScale * layerScale));
     //NumGrid = 10000;
     
     int NumX = int(sqrt(float(NumGrid) * aspect) + 0.5);
@@ -218,7 +219,7 @@ float4 Paint(
                 float bw = (gridW-.6*gridW0)*1.2; //gridW * .75;
                 
                 float bl = bw;
-                float stretch=sqrt(1.43*pow(3.,1./float(layer+1)));
+                float stretch=sqrt(StrokeAspectRatio*pow(3.,1./float(layer+1)));
                 bw*=BrushSize*(.8+.4*noise(gridsumn).y)/stretch;
                 bl*=BrushSize*(.8+.4*noise(gridsumn).z)*stretch;
                 
@@ -279,6 +280,7 @@ return F.Paint(
     Resolution,
     BrushSize,
     StrokeBend,
+    StrokeAspectRatio,
     QualityPercent,
     SampleDistFrac,
     Contrast,
