@@ -182,10 +182,12 @@ float4 Paint(
         int n0 = int(dot(floor(float2(uv/* / RES.xy*/ * float2(NumX2, NumY2))), float2(1, NumX2)));
 		// return float(n0) / NumGrid;
 		
-        for (int ni = 0; ni < 25; ni++) //nine near grids
+        int nei = 5;
+
+        for (int ni = 0; ni < nei*nei; ni++) //nine near grids
         {
-            int nx = ni % 5 - 1;
-            int ny = ni / 5 - 1;
+            int nx = ni % nei - 1;
+            int ny = ni / nei - 1;
 
             int gridn = n0 + nx + ny * NumX2;
             int gridsumn = gridsum + gridn;
@@ -224,7 +226,7 @@ float4 Paint(
                 bl*=BrushSize*(.8+.4*noise(gridsumn).z)*stretch;
                 
                 bw /= 1.-.25*abs(StrokeBend);
-                bw = (l*.001 < bw && bw < gridW0*0.8 && layer != maxLayer) ? 0 : bw; 
+                // bw = (l*.001 < bw && bw < gridW0*0.8 && layer != maxLayer) ? 0 : bw; // filter very big brush
                 
                 // convert to local space --------------------------------------------------------------------------------------------------------------
                 float2 uv_screen = (uv - brushPos.xy) * float2(aspect, 1.);
