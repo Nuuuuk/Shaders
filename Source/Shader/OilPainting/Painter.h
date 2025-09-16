@@ -26,5 +26,5 @@ public:
 	void SetPaintable(const TScriptInterface<IPaintable>& NewTarget);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painter")
-	void ClearPaintable();
+	void ClearPaintable(const TScriptInterface<IPaintable>& NewTarget);
 };
