@@ -134,7 +134,7 @@ float4 Paint(
     float aspect = RES.x / RES.y;
 
     // Canvas Texture
-    float4 canv = float4(BottomCd, 1.);
+    float4 canv = float4(BottomCd, 1.); // float4(1.,1.,1.,0);//
     // float canv = 0.0;
         
     // canv = max(canv, (noise(uv * float2(0.7, 0.03).xy)).x);
@@ -261,7 +261,7 @@ float4 Paint(
                     //s = pow(s, 1.2) * pow(1.285 - pos.y, 0.8) - .25 * pos.y;
                     s *= 0.75;
 
-                float4 dcoll;
+                float4 dcoll = float4(0.,0.,0.,1.);
                 dcoll.xyz = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, SourceTex, TexSampler);
                 col = lerp(col, dcoll, s);
                 // dcoll = debugCircle(uv, brushPos.xy, gridW / 4, aspect, float(layer) / float(maxLayer));
