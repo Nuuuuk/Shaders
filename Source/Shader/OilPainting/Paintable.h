@@ -35,6 +35,9 @@ public:
 	void SetBrushHardness(float HardnessOffset);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
+	void SetBrushOpacity(float OpacityOffset);
+
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
 	void Paint();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
