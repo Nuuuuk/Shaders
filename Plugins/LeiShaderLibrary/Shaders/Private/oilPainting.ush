@@ -145,7 +145,7 @@ float4 Paint(
     // Brush Layers
     float3 brushPos;
 
-    int NumGrid = int(float(0x10000 / 1) * min(pow(RES.x * RES.y / 1920. / 1440., .5), 1) * (1.0 - layerScale * layerScale));
+    int NumGrid = int(float(0x10000 / 1.) * min(pow(RES.x * RES.y / 1920. / 1440., .5), 1) * (1.0 - layerScale * layerScale));
     //NumGrid = 10000;
     
     int NumX = int(sqrt(float(NumGrid) * aspect) + 0.5);
