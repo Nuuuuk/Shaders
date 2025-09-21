@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Paintable.generated.h"
 
 // This class does not need to be modified.
@@ -44,5 +45,5 @@ public:
 	void PaintEnd();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
-	void Capture();
+	void Capture(UTextureRenderTarget2D*& OutRT, bool& bSuccess);
 };
