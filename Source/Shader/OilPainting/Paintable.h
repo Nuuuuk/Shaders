@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "Engine/TextureRenderTarget2D.h"
 #include "Paintable.generated.h"
 
 // This class does not need to be modified.
@@ -24,7 +23,7 @@ class SHADER_API IPaintable
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
-	void OnRayHit(const FVector& HitPosition, const FVector2D& HitUV);
+	void OnRayHit(const FVector& HitPosition, const FVector2D& HitUV, UTexture*& OutHitSrcTexRT);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
 	void OnRayExit();
@@ -45,5 +44,5 @@ public:
 	void PaintEnd();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = "Painting")
-	void Capture(UTextureRenderTarget2D*& OutRT, bool& bSuccess);
+	void Capture(UTexture*& OutTex, bool& bSuccess);
 };
