@@ -134,7 +134,7 @@ float4 Paint(
     float aspect = RES.x / RES.y;
 
     // Canvas Texture
-    float4 canv = float4(BottomCd, 1.); // float4(1.,1.,1.,0);//
+    float4 canv = float4(BottomCd, 0.); // float4(1.,1.,1.,0);//
     // float canv = 0.0;
         
     // canv = max(canv, (noise(uv * float2(0.7, 0.03).xy)).x);
@@ -209,9 +209,11 @@ float4 Paint(
                 float2 grad = getGrad(brushPos.xy, gridW * sampleDistFrac, SrcContrast, SrcBright, SourceTex, TexSampler)+getGrad(brushPos.xy,gridW * sampleDistFrac, SrcContrast, SrcBright, SourceTex, TexSampler);
                 
                 grad /= 2.;
+                float2 randomDir = normalize(noise(gridsumn).xy - 0.5);
+                grad += randomDir * 0.01;
                 grad += sin(uv*100.) * .005; // add random noise (for plain area
                 
-                float l = length(grad);
+                float gradL = length(grad);
                 float2 n = normalize(grad);
                 float2 t = N(n);
                 //return float4(grad,1.,1.);
@@ -225,8 +227,9 @@ float4 Paint(
                 bw*=BrushSize*(.8+.4*noise(gridsumn).y)/stretch;
                 bl*=BrushSize*(.8+.4*noise(gridsumn).z)*stretch;
                 
+                // bw = (gradL < 0.04 / bw && bw < 0.03 && layer != maxLayer) ? 0 : bw; // filter very big brush
+
                 bw /= 1.-.25*abs(StrokeBend);
-                // bw = (l*.001 < bw && bw < gridW0*0.8 && layer != maxLayer) ? 0 : bw; // filter very big brush
                 
                 // convert to local space --------------------------------------------------------------------------------------------------------------
                 float2 uv_screen = (uv - brushPos.xy) * float2(aspect, 1.);
@@ -262,7 +265,10 @@ float4 Paint(
                     s *= 0.75;
 
                 float4 dcoll = float4(0.,0.,0.,1.);
-                dcoll.xyz = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, SourceTex, TexSampler);
+                float3 baseColor = getColor(brushPos.xy, 1.0, SrcContrast, SrcBright, SourceTex, TexSampler);
+                // float3 colorNoise = (noise(gridsumn + 99.0).xyz - 0.5) * 0.05;
+                // baseColor += colorNoise;
+                dcoll.xyz = baseColor;
                 col = lerp(col, dcoll, s);
                 // dcoll = debugCircle(uv, brushPos.xy, gridW / 4, aspect, float(layer) / float(maxLayer));
                 // col = lerp(col, dcoll, dcoll.w);
