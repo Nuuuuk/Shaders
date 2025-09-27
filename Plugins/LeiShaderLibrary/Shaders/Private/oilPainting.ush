@@ -111,6 +111,11 @@ float4 debugCircle(float2 uv, float2 center, float radius, float aspect, float b
            lerp(float3(0.0, 1.0, 0.0), float3(0.0, 0.0, 1.0), bend*2-1.), alpha )* step(dist, radius);
 }
 
+float remap(float value, float min1, float max1, float min2, float max2)
+{
+    return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+}
+
 float4 Paint(
     float2 uv,
     float2 RES,
@@ -220,7 +225,8 @@ float4 Paint(
                 
                 
                 // width and length of brush stroke --------------------------------------------------------------------------------------------------------------
-                float bw = (gridW-.6*gridW0)*1.2; //gridW * .75;
+                float bw = (gridW-.6*gridW0)*1.2; //gridW * .75;'
+                bw *= remap(noise(gridsumn * PI).x, 0., 1., 0.9, 1.1); // random size
                 
                 float bl = bw;
                 float stretch=sqrt(StrokeAspectRatio*pow(3.,1./float(layer+1)));
