@@ -16,13 +16,12 @@ float2 GetGrad(float2 uv, float delta, Texture2D tex, SamplerState TexSampler)
     ) / delta;
 }
 
-float4 GenerateNormal(float2 uv, Texture2D tex, SamplerState TexSampler)
+float3 GenerateNormal(float2 uv, Texture2D tex, SamplerState TexSampler)
 {
     float delta = .001;
     float2 grad = GetGrad(uv, delta, tex, TexSampler);
     
-    float3 normal = normalize(float3(grad, 150.0));
-    return float4(normal.xyz,1.);
+    return normalize(float3(grad, 150.));
 }
 };
 
