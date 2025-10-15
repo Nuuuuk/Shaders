@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "OilPainting/Painter.h"
 #include "ShaderCharacter.generated.h"
 
 class USpringArmComponent;
@@ -16,7 +17,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class AShaderCharacter : public ACharacter
+class AShaderCharacter : public ACharacter, public IPainter
 {
 	GENERATED_BODY()
 
@@ -64,10 +65,7 @@ protected:
 	bool ProjectCrosshairToPaintSurface(
 		FName CanvasTag,
 		float TraceDistance,
-		float ConeRadius,
-		int32 NumRays,
-		UPARAM(ref) FHitResult& OutHit,
-		UPARAM(ref) TArray<FHitResult>& OutExtraHits
+		UPARAM(ref) FHitResult& OutHit
 	);
 
 	UFUNCTION(BlueprintCallable, Category = "Debug")
